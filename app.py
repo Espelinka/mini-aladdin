@@ -1,5 +1,3 @@
-# app.py
-
 import json
 import os
 from flask import Flask, render_template, request, redirect, url_for
@@ -9,19 +7,16 @@ import requests
 app = Flask(__name__)
 PORTFOLIO_FILE = "portfolio.json"
 
-# Загружаем портфель из файла (или создаём пустой)
 def load_portfolio():
     if os.path.exists(PORTFOLIO_FILE):
         with open(PORTFOLIO_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
-# Сохраняем портфель в файл
 def save_portfolio(portfolio):
     with open(PORTFOLIO_FILE, "w", encoding="utf-8") as f:
         json.dump(portfolio, f, ensure_ascii=False, indent=2)
 
-# Получаем цену акции или крипты
 def get_price(symbol, asset_type):
     try:
         if asset_type == "stock":
@@ -30,7 +25,6 @@ def get_price(symbol, asset_type):
             if not hist.empty:
                 return hist['Close'].iloc[-1]
         elif asset_type == "crypto":
-            # Используем CoinGecko (например: "bitcoin", "ethereum")
             url = f"https://api.coingecko.com/api/v3/simple/price?ids={symbol}&vs_currencies=usd"
             response = requests.get(url)
             data = response.json()
@@ -63,7 +57,6 @@ def index():
                 save_portfolio(portfolio)
         return redirect(url_for("index"))
 
-    # Получаем текущие цены и считаем стоимость
     total_value = 0
     enriched_portfolio = []
     for item in portfolio:
@@ -77,6 +70,8 @@ def index():
             "price": round(price, 4) if price else None,
             "value": round(value, 2)
         })
+
+    return render_template("index.html", portfolio=enriched_portfolio, total_value=round(total_value, 2))
 
 if __name__ == "__main__":
     import os
