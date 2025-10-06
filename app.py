@@ -40,23 +40,40 @@ def index():
     if request.method == "POST":
         action = request.form.get("action")
         if action == "add":
-            symbol = request.form.get("symbol").strip().lower()
-            asset_type = request.form.get("type")
-            amount = float(request.form.get("amount", 0))
-            if symbol and amount > 0:
-                portfolio.append({
-                    "symbol": symbol,
-                    "type": asset_type,
-                    "amount": amount
-                })
-                save_portfolio(portfolio)
+            symbol = request.form.get("symbol", "").strip().lower()
+            asset_type = request.form.get("type", "")
+            amount_str = request.form.get("amount", "").strip()
+
+            # Проверяем, что всё заполнено
+            if not symbol or not asset_type or not amount_str:
+                # Можно добавить flash-сообщение, но пока просто игнорируем
+                pass
+            else:
+                try:
+                    amount = float(amount_str)
+                    if amount > 0:
+                        portfolio.append({
+                            "symbol": symbol,
+                            "type": asset_type,
+                            "amount": amount
+                        })
+                        save_portfolio(portfolio)
+                except ValueError:
+                    # Некорректное число — игнорируем
+                    pass
+
         elif action == "remove":
-            index_to_remove = int(request.form.get("index"))
-            if 0 <= index_to_remove < len(portfolio):
-                portfolio.pop(index_to_remove)
-                save_portfolio(portfolio)
+            try:
+                index_to_remove = int(request.form.get("index", -1))
+                if 0 <= index_to_remove < len(portfolio):
+                    portfolio.pop(index_to_remove)
+                    save_portfolio(portfolio)
+            except (ValueError, TypeError):
+                pass
+
         return redirect(url_for("index"))
 
+    # --- Часть для отображения страницы ---
     total_value = 0
     enriched_portfolio = []
     for item in portfolio:
@@ -72,8 +89,8 @@ def index():
         })
 
     return render_template("index.html", portfolio=enriched_portfolio, total_value=round(total_value, 2))
-
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
